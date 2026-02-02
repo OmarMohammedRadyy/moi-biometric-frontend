@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- PWA Meta Tags -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1f3c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MOI Biometric" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- SEO -->
+  <meta name="description"
+    content="نظام الماسح البيومتري - وزارة الداخلية - دولة الكويت | النظام الرسمي للتحقق من الهوية" />
+  <meta name="author" content="Kuwait Ministry of Interior" />
+  <meta name="keywords" content="MOI, Kuwait, Biometric, Security, Scanner, وزارة الداخلية, الكويت, بيومتري" />
+
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icon-192.svg" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <title>MOI Biometric Scanner | وزارة الداخلية - الكويت</title>
+
+  <style>
+    /* Splash Screen */
+    .splash-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, #0d1f3c 0%, #0a1628 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .splash-logo {
+      width: 100px;
+      height: 100px;
+      animation: pulse 2s infinite;
+    }
+
+    .splash-text {
+      margin-top: 1.5rem;
+      color: #c4a44e;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .splash-loader {
+      margin-top: 2rem;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(196, 164, 78, 0.2);
+      border-top-color: #c4a44e;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Splash Screen -->
+  <div id="splash" class="splash-screen">
+    <svg class="splash-logo" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="45" fill="url(#splash-gradient)" stroke="#c4a44e" strokeWidth="3" />
+      <path d="M50 20 L42 40 L50 36 L58 40 L50 20" fill="#c4a44e" />
+      <circle cx="50" cy="52" r="16" fill="none" stroke="#c4a44e" strokeWidth="2" />
+      <path d="M35 70 Q50 80 65 70" stroke="#c4a44e" strokeWidth="2" fill="none" />
+      <defs>
+        <linearGradient id="splash-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1a4d7c" />
+          <stop offset="100%" stop-color="#0d3a5c" />
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="splash-text">MOI Biometric Scanner</div>
+    <div class="splash-loader"></div>
+  </div>
+
+  <div id="root"></div>
+
+  <script type="module" src="/src/main.jsx"></script>
+
+  <script>
+    // Hide splash screen when app loads
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('splash').classList.add('hidden');
+      }, 1500);
+    });
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => { });
+      });
+    }
+  </script>
+</body>
+
+</html>
