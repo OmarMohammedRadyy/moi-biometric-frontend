@@ -8,7 +8,6 @@ const LogIcon = () => (
         <polyline points="14 2 14 8 20 8" />
         <line x1="16" y1="13" x2="8" y2="13" />
         <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
     </svg>
 )
 
@@ -74,7 +73,7 @@ function AuthLogs() {
     const [loading, setLoading] = useState(true)
     const [page, setPage] = useState(1)
     const [total, setTotal] = useState(0)
-    const [filter, setFilter] = useState('all') // all, login, logout
+    const [filter, setFilter] = useState('all')
     const perPage = 30
 
     useEffect(() => {
@@ -116,8 +115,7 @@ function AuthLogs() {
         const date = new Date(dateString)
         return date.toLocaleTimeString('ar-KW', {
             hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
+            minute: '2-digit'
         })
     }
 
@@ -127,7 +125,7 @@ function AuthLogs() {
         if (userAgent.includes('Android')) return 'Android'
         if (userAgent.includes('Windows')) return 'Windows'
         if (userAgent.includes('Mac')) return 'Mac'
-        return 'متصفح ويب'
+        return 'متصفح'
     }
 
     const totalPages = Math.ceil(total / perPage)
@@ -143,9 +141,9 @@ function AuthLogs() {
                         onChange={(e) => { setFilter(e.target.value); setPage(1); }}
                         className="filter-select"
                     >
-                        <option value="all">جميع العمليات</option>
-                        <option value="login">تسجيل الدخول فقط</option>
-                        <option value="logout">تسجيل الخروج فقط</option>
+                        <option value="all">الكل</option>
+                        <option value="login">دخول</option>
+                        <option value="logout">خروج</option>
                     </select>
                     <button onClick={fetchLogs} className="refresh-btn">
                         <RefreshIcon />
@@ -161,8 +159,8 @@ function AuthLogs() {
                 </div>
             </div>
 
-            {/* Logs Table */}
-            <div className="logs-table-container">
+            {/* Logs - Cards for mobile */}
+            <div className="auth-logs-list">
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '3rem' }}>
                         <div className="spinner" style={{ width: 40, height: 40, margin: '0 auto' }}></div>
@@ -174,58 +172,44 @@ function AuthLogs() {
                         <p>لم يتم تسجيل أي عمليات دخول أو خروج بعد</p>
                     </div>
                 ) : (
-                    <table className="logs-table">
-                        <thead>
-                            <tr>
-                                <th>العملية</th>
-                                <th>المستخدم</th>
-                                <th>التاريخ</th>
-                                <th>الوقت</th>
-                                <th>العنوان IP</th>
-                                <th>الجهاز</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {logs.map(log => (
-                                <tr key={log.id}>
-                                    <td>
-                                        <span className={`action-badge ${log.action}`}>
-                                            {log.action === 'login' ? (
-                                                <><LoginIcon /> دخول</>
-                                            ) : (
-                                                <><LogoutIcon /> خروج</>
-                                            )}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="user-cell">
-                                            <span className="user-fullname">{log.full_name}</span>
-                                            <span className="user-username">@{log.username}</span>
-                                        </div>
-                                    </td>
-                                    <td>{formatDate(log.timestamp)}</td>
-                                    <td>
-                                        <span className="time-cell">
-                                            <ClockIcon />
-                                            {formatTime(log.timestamp)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className="ip-cell">
-                                            <GlobeIcon />
-                                            {log.ip_address || '-'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className="device-cell">
+                    <div className="auth-log-cards">
+                        {logs.map(log => (
+                            <div key={log.id} className={`auth-log-card ${log.action}`}>
+                                <div className="log-card-header">
+                                    <span className={`action-badge ${log.action}`}>
+                                        {log.action === 'login' ? (
+                                            <><LoginIcon /> دخول</>
+                                        ) : (
+                                            <><LogoutIcon /> خروج</>
+                                        )}
+                                    </span>
+                                    <span className="log-time">
+                                        <ClockIcon />
+                                        {formatTime(log.timestamp)}
+                                    </span>
+                                </div>
+                                <div className="log-card-body">
+                                    <div className="log-user">
+                                        <span className="log-user-name">{log.full_name}</span>
+                                        <span className="log-user-username">@{log.username}</span>
+                                    </div>
+                                    <div className="log-meta">
+                                        <span className="log-date">{formatDate(log.timestamp)}</span>
+                                        <span className="log-device">
                                             <DeviceIcon />
                                             {getDeviceInfo(log.user_agent)}
                                         </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    </div>
+                                </div>
+                                {log.ip_address && (
+                                    <div className="log-card-footer">
+                                        <GlobeIcon />
+                                        <span>{log.ip_address}</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
 
@@ -240,7 +224,7 @@ function AuthLogs() {
                         <ChevronRightIcon />
                     </button>
                     <span className="page-info">
-                        صفحة {page} من {totalPages}
+                        {page} / {totalPages}
                     </span>
                     <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}

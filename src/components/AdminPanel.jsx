@@ -6,15 +6,6 @@ import AuthLogs from './AuthLogs'
 import ScanLogs from './ScanLogs'
 
 // أيقونات SVG
-const DashboardIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="9" />
-        <rect x="14" y="3" width="7" height="5" />
-        <rect x="14" y="12" width="7" height="9" />
-        <rect x="3" y="16" width="7" height="5" />
-    </svg>
-)
-
 const UsersIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -135,7 +126,7 @@ const VisitorCard = ({ visitor, onDelete }) => {
     )
 }
 
-// صفحة إدارة الزوار (الصفحة الرئيسية للوحة التحكم)
+// صفحة إدارة الزوار
 function VisitorsManagement() {
     const [visitors, setVisitors] = useState([])
     const [loading, setLoading] = useState(true)
@@ -271,112 +262,110 @@ function VisitorsManagement() {
                         <h3>تسجيل زائر جديد</h3>
                     </div>
                     <div className="form-section-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem' }}>
-                            <div>
-                                <div className="form-grid">
-                                    <div className="form-group">
-                                        <label>الاسم الأول</label>
-                                        <input
-                                            type="text"
-                                            name="first_name"
-                                            value={formData.first_name}
-                                            onChange={handleInputChange}
-                                            className="form-input"
-                                            placeholder="الاسم الأول"
-                                            required
-                                        />
+                        {/* رفع الصورة - أولاً على الجوال */}
+                        <div className="photo-upload-mobile">
+                            <div
+                                className={`photo-preview ${previewUrl ? 'has-image' : ''}`}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="معاينة" />
+                                ) : (
+                                    <div className="photo-preview-text">
+                                        <ImageIcon />
+                                        <p>صورة الزائر</p>
+                                        <span>اضغط للرفع</span>
                                     </div>
-                                    <div className="form-group">
-                                        <label>اسم العائلة</label>
-                                        <input
-                                            type="text"
-                                            name="last_name"
-                                            value={formData.last_name}
-                                            onChange={handleInputChange}
-                                            className="form-input"
-                                            placeholder="اسم العائلة"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>رقم الجواز</label>
-                                        <input
-                                            type="text"
-                                            name="passport_number"
-                                            value={formData.passport_number}
-                                            onChange={handleInputChange}
-                                            className="form-input"
-                                            placeholder="رقم جواز السفر"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>حالة التأشيرة</label>
-                                        <select
-                                            name="visa_status"
-                                            value={formData.visa_status}
-                                            onChange={handleInputChange}
-                                            className="form-input"
-                                        >
-                                            <option value="سارية">سارية - صالحة</option>
-                                            <option value="سياحية">سياحية</option>
-                                            <option value="عمل">عمل</option>
-                                            <option value="استثمار">استثمار تجاري</option>
-                                            <option value="إقامة">إقامة</option>
-                                        </select>
-                                    </div>
-                                </div>
+                                )}
                             </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}
+                            />
+                        </div>
 
-                            {/* رفع الصورة */}
-                            <div className="photo-upload">
-                                <div
-                                    className={`photo-preview ${previewUrl ? 'has-image' : ''}`}
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    {previewUrl ? (
-                                        <img src={previewUrl} alt="معاينة" />
-                                    ) : (
-                                        <div className="photo-preview-text">
-                                            <ImageIcon />
-                                            <p>صورة جواز السفر</p>
-                                            <span>اضغط للرفع</span>
-                                        </div>
-                                    )}
-                                </div>
+                        {/* الحقول */}
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label>الاسم الأول</label>
                                 <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    style={{ display: 'none' }}
+                                    type="text"
+                                    name="first_name"
+                                    value={formData.first_name}
+                                    onChange={handleInputChange}
+                                    className="form-input"
+                                    placeholder="الاسم الأول"
+                                    required
                                 />
                             </div>
+                            <div className="form-group">
+                                <label>اسم العائلة</label>
+                                <input
+                                    type="text"
+                                    name="last_name"
+                                    value={formData.last_name}
+                                    onChange={handleInputChange}
+                                    className="form-input"
+                                    placeholder="اسم العائلة"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>رقم الجواز</label>
+                                <input
+                                    type="text"
+                                    name="passport_number"
+                                    value={formData.passport_number}
+                                    onChange={handleInputChange}
+                                    className="form-input"
+                                    placeholder="رقم جواز السفر"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>حالة التأشيرة</label>
+                                <select
+                                    name="visa_status"
+                                    value={formData.visa_status}
+                                    onChange={handleInputChange}
+                                    className="form-input"
+                                >
+                                    <option value="سارية">سارية - صالحة</option>
+                                    <option value="سياحية">سياحية</option>
+                                    <option value="عمل">عمل</option>
+                                    <option value="استثمار">استثمار تجاري</option>
+                                    <option value="إقامة">إقامة</option>
+                                </select>
+                            </div>
                         </div>
+
+                        {/* زر الإرسال */}
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="submit-btn"
+                        >
+                            {submitting ? (
+                                <>
+                                    <div className="spinner"></div>
+                                    جاري التسجيل...
+                                </>
+                            ) : (
+                                <>
+                                    <UserPlusIcon />
+                                    تسجيل الزائر
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
-
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="submit-btn"
-                >
-                    {submitting ? (
-                        <>
-                            <div className="spinner"></div>
-                            جاري التسجيل...
-                        </>
-                    ) : (
-                        <>
-                            <UserPlusIcon />
-                            تسجيل الزائر الجديد
-                        </>
-                    )}
-                </button>
             </form>
 
             {/* قائمة الزوار */}
-            <div className="form-section" style={{ marginTop: '2rem' }}>
+            <div className="form-section">
                 <div className="form-section-header">
                     <h3>الزوار المسجلون ({visitors.length})</h3>
                 </div>
@@ -408,7 +397,7 @@ function VisitorsManagement() {
     )
 }
 
-// لوحة التحكم الرئيسية مع التبويبات
+// لوحة التحكم الرئيسية
 function AdminPanel() {
     const location = useLocation()
     const currentPath = location.pathname
@@ -416,8 +405,8 @@ function AdminPanel() {
     const tabs = [
         { path: '/admin', label: 'الزوار', icon: <VisitorsIcon /> },
         { path: '/admin/users', label: 'المستخدمين', icon: <UsersIcon /> },
-        { path: '/admin/auth-logs', label: 'سجل المراقبة', icon: <LogIcon /> },
-        { path: '/admin/scan-logs', label: 'نتائج المسح', icon: <ScanLogIcon /> },
+        { path: '/admin/auth-logs', label: 'المراقبة', icon: <LogIcon /> },
+        { path: '/admin/scan-logs', label: 'المسح', icon: <ScanLogIcon /> },
     ]
 
     const isActive = (path) => {
@@ -429,7 +418,7 @@ function AdminPanel() {
 
     return (
         <div className="admin-page">
-            {/* الشريط الجانبي */}
+            {/* الشريط الجانبي - للشاشات الكبيرة */}
             <aside className="admin-sidebar">
                 <div className="sidebar-header">
                     <div className="sidebar-emblem">
@@ -452,7 +441,7 @@ function AdminPanel() {
                 </nav>
             </aside>
 
-            {/* التبويبات للجوال */}
+            {/* شريط التنقل السفلي - للجوال */}
             <div className="admin-tabs-mobile">
                 {tabs.map(tab => (
                     <Link
