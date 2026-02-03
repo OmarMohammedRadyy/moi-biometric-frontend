@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
+import { getImageUrl } from '../config'
 import UsersManagement from './UsersManagement'
 import AuthLogs from './AuthLogs'
 import ScanLogs from './ScanLogs'
@@ -106,7 +107,7 @@ const VisitorCard = ({ visitor, onDelete }) => {
     return (
         <div className="visitor-card">
             <img
-                src={`${import.meta.env.VITE_API_URL || ''}/uploads/${visitor.photo_path}`}
+                src={getImageUrl(visitor.photo_path)}
                 alt={visitor.full_name}
                 className="visitor-photo"
             />

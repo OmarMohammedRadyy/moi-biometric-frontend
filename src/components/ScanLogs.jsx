@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { getImageUrl } from '../config'
 
 // أيقونات
 const ScanIcon = () => (
@@ -169,7 +170,7 @@ function ScanLogs() {
                                     <div className="scan-visitor-info">
                                         <div className="visitor-photo-container">
                                             <img
-                                                src={`${import.meta.env.VITE_API_URL || ''}/uploads/${log.visitor.photo_path}`}
+                                                src={getImageUrl(log.visitor.photo_path)}
                                                 alt={log.visitor.full_name}
                                                 className="visitor-photo-large"
                                             />
