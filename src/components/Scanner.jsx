@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
-import { getImageUrl } from '../config'
+import { getImageSrc } from '../config'
 
 // حالات المسح
 const SCAN_STATE = {
@@ -400,7 +400,7 @@ function Scanner() {
                             </div>
                             <div className="photo-box">
                                 <img
-                                    src={getImageUrl(result.visitor.photo_path)}
+                                    src={getImageSrc(result.visitor)}
                                     alt="الصورة المسجلة"
                                 />
                             </div>

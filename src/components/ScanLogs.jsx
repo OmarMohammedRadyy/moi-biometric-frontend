@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { getImageUrl } from '../config'
+import { getImageSrc } from '../config'
 
 // أيقونات
 const ScanIcon = () => (
@@ -170,7 +170,7 @@ function ScanLogs() {
                                     <div className="scan-visitor-info">
                                         <div className="visitor-photo-container">
                                             <img
-                                                src={getImageUrl(log.visitor.photo_path)}
+                                                src={getImageSrc(log.visitor)}
                                                 alt={log.visitor.full_name}
                                                 className="visitor-photo-large"
                                             />
