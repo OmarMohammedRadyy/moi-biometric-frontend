@@ -1,7 +1,7 @@
 {
-    "name": "MOI Biometric Scanner",
-    "short_name": "MOI Biometric",
-    "description": "Kuwait Ministry of Interior - Official Biometric Security Scanner",
+    "name": "الإدارة العامة لشئون الاقامة",
+    "short_name": "شئون الاقامة",
+    "description": "الإدارة العامة لشئون الاقامة - إدارة الخدمات الالكترونية - دولة الكويت",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0a1628",
@@ -9,15 +9,15 @@
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/icon-192.svg",
+            "src": "/logo.png",
             "sizes": "192x192",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "/icon-512.svg",
+            "src": "/logo.png",
             "sizes": "512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any maskable"
         }
     ],

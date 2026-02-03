@@ -1,23 +1,9 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import Scanner from './components/Scanner'
 import AdminPanel from './components/AdminPanel'
-
-// شعار الكويت
-const KuwaitEmblem = () => (
-  <svg viewBox="0 0 48 48" fill="none">
-    <circle cx="24" cy="24" r="22" fill="url(#emblem-bg)" stroke="#c4a44e" strokeWidth="2" />
-    <path d="M24 10 L20 20 L24 18 L28 20 L24 10" fill="#c4a44e" />
-    <circle cx="24" cy="26" r="8" fill="none" stroke="#c4a44e" strokeWidth="1.5" />
-    <path d="M18 34 Q24 38 30 34" stroke="#c4a44e" strokeWidth="1.5" fill="none" />
-    <defs>
-      <linearGradient id="emblem-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#1a4d7c" />
-        <stop offset="100%" stopColor="#0d3a5c" />
-      </linearGradient>
-    </defs>
-  </svg>
-)
+import Login from './components/Login'
 
 // أيقونات التنقل
 const ScannerIcon = () => (
@@ -51,30 +37,145 @@ const CloseIcon = () => (
   </svg>
 )
 
+const LogoutIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+)
+
 function App() {
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  // Check authentication on mount
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('auth_token')
+
+    if (!token) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await axios.get(`/api/auth/verify?token=${token}`)
+      if (response.data.valid) {
+        setIsAuthenticated(true)
+        setUser({
+          user_id: response.data.user_id,
+          username: response.data.username,
+          full_name: response.data.full_name,
+          role: response.data.role
+        })
+      }
+    } catch (err) {
+      // Token invalid, clear it
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLoginSuccess = (data) => {
+    setIsAuthenticated(true)
+    setUser({
+      user_id: data.user_id,
+      username: data.username,
+      full_name: data.full_name,
+      role: data.role
+    })
+  }
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('auth_token')
+
+    try {
+      const formData = new FormData()
+      formData.append('token', token)
+      await axios.post('/api/auth/logout', formData)
+    } catch (err) {
+      console.error('Logout error:', err)
+    }
+
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    setIsAuthenticated(false)
+    setUser(null)
+  }
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen)
   const closeMobileMenu = () => setMobileMenuOpen(false)
 
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin'
+
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="login-page">
+        <div className="spinner" style={{ width: 50, height: 50 }}></div>
+      </div>
+    )
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />
+  }
+
+  // Officer view - Scanner only (no header navigation)
+  if (!isAdmin) {
+    return (
+      <div className="app-container">
+        <header className="app-header">
+          <div className="header-content">
+            <div className="header-brand">
+              <div className="header-emblem">
+                <img src="/logo.png" alt="شعار الإدارة" />
+              </div>
+              <div className="header-title">
+                <h1>الإدارة العامة لشئون الإقامة</h1>
+                <span>{user?.full_name}</span>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
+              <LogoutIcon />
+              خروج
+            </button>
+          </div>
+        </header>
+        <main className="main-content">
+          <Scanner />
+        </main>
+      </div>
+    )
+  }
+
+  // Admin view - Full navigation
   return (
     <div className="app-container">
-      {/* Header */}
       <header className="app-header">
         <div className="header-content">
-          {/* Brand */}
           <div className="header-brand">
             <div className="header-emblem">
-              <KuwaitEmblem />
+              <img src="/logo.png" alt="شعار الإدارة" />
             </div>
             <div className="header-title">
-              <h1>MOI Biometric Scanner</h1>
-              <span>Official Scanner</span>
+              <h1>الإدارة العامة لشئون الإقامة</h1>
+              <span>إدارة الخدمات الالكترونية</span>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Admin Only */}
           <nav className="desktop-nav">
             <Link
               to="/"
@@ -85,11 +186,15 @@ function App() {
             </Link>
             <Link
               to="/admin"
-              className={`nav-btn ${location.pathname === '/admin' ? 'active' : ''}`}
+              className={`nav-btn ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
             >
               <AdminIcon />
               لوحة التحكم
             </Link>
+            <button onClick={handleLogout} className="logout-btn">
+              <LogoutIcon />
+              خروج
+            </button>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -109,11 +214,12 @@ function App() {
       <div className={`mobile-nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="mobile-nav-header">
           <div className="header-brand">
-            <div className="header-emblem" style={{ width: 40, height: 40 }}>
-              <KuwaitEmblem />
+            <div className="header-emblem" style={{ width: 70, height: 70, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/logo.png" alt="شعار الإدارة" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.6)' }} />
             </div>
             <div className="header-title">
-              <h1 style={{ fontSize: '1rem' }}>MOI Biometric</h1>
+              <h1 style={{ fontSize: '0.85rem' }}>الإدارة العامة لشئون الإقامة</h1>
+              <span style={{ fontSize: '0.7rem' }}>{user?.full_name} ({user?.role === 'admin' ? 'مدير' : 'عسكري'})</span>
             </div>
           </div>
           <button className="mobile-nav-close" onClick={closeMobileMenu}>
@@ -131,12 +237,20 @@ function App() {
           </Link>
           <Link
             to="/admin"
-            className={`mobile-nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
+            className={`mobile-nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
             onClick={closeMobileMenu}
           >
             <AdminIcon />
             لوحة التحكم
           </Link>
+          <button
+            className="mobile-nav-link"
+            onClick={() => { closeMobileMenu(); handleLogout(); }}
+            style={{ color: '#ff3d3d', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}
+          >
+            <LogoutIcon />
+            تسجيل الخروج
+          </button>
         </nav>
       </div>
 
@@ -144,7 +258,8 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Scanner />} />
-          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/*" element={<AdminPanel />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

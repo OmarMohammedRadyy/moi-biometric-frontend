@@ -10,23 +10,23 @@
   <meta name="theme-color" content="#0d1f3c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="MOI Biometric" />
+  <meta name="apple-mobile-web-app-title" content="الإدارة العامة لشئون الاقامة" />
   <meta name="mobile-web-app-capable" content="yes" />
 
   <!-- SEO -->
   <meta name="description"
-    content="نظام الماسح البيومتري - وزارة الداخلية - دولة الكويت | النظام الرسمي للتحقق من الهوية" />
-  <meta name="author" content="Kuwait Ministry of Interior" />
-  <meta name="keywords" content="MOI, Kuwait, Biometric, Security, Scanner, وزارة الداخلية, الكويت, بيومتري" />
+    content="الإدارة العامة لشئون الاقامة - إدارة الخدمات الالكترونية - دولة الكويت | النظام الرسمي للتحقق من الهوية" />
+  <meta name="author" content="Gen. Dep. of Residency Affairs - Kuwait" />
+  <meta name="keywords" content="الاقامة, الكويت, بيومتري, Residency, Kuwait, الخدمات الالكترونية" />
 
   <!-- Icons -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/icon-192.svg" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json" />
 
-  <title>MOI Biometric Scanner | وزارة الداخلية - الكويت</title>
+  <title>الإدارة العامة لشئون الاقامة | إدارة الخدمات الالكترونية</title>
 
   <style>
     /* Splash Screen */
@@ -48,17 +48,26 @@
     }
 
     .splash-logo {
-      width: 100px;
-      height: 100px;
+      width: 140px;
+      height: 140px;
       animation: pulse 2s infinite;
+      object-fit: contain;
     }
 
     .splash-text {
       margin-top: 1.5rem;
       color: #c4a44e;
-      font-family: 'Tajawal', sans-serif;
+      font-family: 'Tajawal', 'Cairo', sans-serif;
       font-size: 1.2rem;
       font-weight: 600;
+      text-align: center;
+    }
+
+    .splash-subtext {
+      margin-top: 0.5rem;
+      color: #8799b3;
+      font-family: 'Tajawal', 'Cairo', sans-serif;
+      font-size: 0.9rem;
     }
 
     .splash-loader {
@@ -94,19 +103,9 @@
 <body>
   <!-- Splash Screen -->
   <div id="splash" class="splash-screen">
-    <svg class="splash-logo" viewBox="0 0 100 100" fill="none">
-      <circle cx="50" cy="50" r="45" fill="url(#splash-gradient)" stroke="#c4a44e" strokeWidth="3" />
-      <path d="M50 20 L42 40 L50 36 L58 40 L50 20" fill="#c4a44e" />
-      <circle cx="50" cy="52" r="16" fill="none" stroke="#c4a44e" strokeWidth="2" />
-      <path d="M35 70 Q50 80 65 70" stroke="#c4a44e" strokeWidth="2" fill="none" />
-      <defs>
-        <linearGradient id="splash-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#1a4d7c" />
-          <stop offset="100%" stop-color="#0d3a5c" />
-        </linearGradient>
-      </defs>
-    </svg>
-    <div class="splash-text">MOI Biometric Scanner</div>
+    <img src="/logo.png" alt="شعار الإدارة" class="splash-logo" />
+    <div class="splash-text">الإدارة العامة لشئون الاقامة</div>
+    <div class="splash-subtext">إدارة الخدمات الالكترونية</div>
     <div class="splash-loader"></div>
   </div>
 

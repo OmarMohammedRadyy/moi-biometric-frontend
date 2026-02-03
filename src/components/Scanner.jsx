@@ -246,11 +246,16 @@ function Scanner() {
 
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
 
+            const token = localStorage.getItem('auth_token')
             const formData = new FormData()
             formData.append('photo', blob, 'capture.jpg')
+            formData.append('token', token)
 
             const response = await axios.post('/api/verify', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
+                }
             })
 
             const data = response.data
@@ -373,6 +378,11 @@ function Scanner() {
                 {/* نتيجة التطابق */}
                 {scanState === SCAN_STATE.MATCH && result && (
                     <div className="result-match">
+                        <button onClick={handleReset} className="scan-again-btn" style={{ marginBottom: '1rem', width: 'auto', padding: '0.5rem 1.5rem', fontSize: '0.9rem', margin: '0 auto 1rem auto' }}>
+                            <RefreshIcon />
+                            مسح جديد
+                        </button>
+
                         <div className="result-header">
                             <ShieldCheckIcon />
                             <h3>تم التحقق - صلاحية الدخول</h3>
@@ -389,7 +399,7 @@ function Scanner() {
                             </div>
                             <div className="photo-box">
                                 <img
-                                    src={`/uploads/${result.visitor.photo_path}`}
+                                    src={`${import.meta.env.VITE_API_URL || ''}/uploads/${result.visitor.photo_path}`}
                                     alt="الصورة المسجلة"
                                 />
                             </div>
@@ -418,17 +428,17 @@ function Scanner() {
                                 </span>
                             </div>
                         </div>
-
-                        <button onClick={handleReset} className="scan-again-btn">
-                            <RefreshIcon />
-                            مسح جديد
-                        </button>
                     </div>
                 )}
 
                 {/* نتيجة عدم التطابق */}
                 {scanState === SCAN_STATE.NO_MATCH && (
                     <div className="result-no-match">
+                        <button onClick={handleReset} className="scan-again-btn" style={{ marginBottom: '1rem', width: 'auto', padding: '0.5rem 1.5rem', fontSize: '0.9rem', margin: '0 auto 1rem auto' }}>
+                            <RefreshIcon />
+                            إعادة المسح
+                        </button>
+
                         <div className="result-header denied">
                             <ShieldXIcon />
                             <h3>الدخول مرفوض - لم يتم التحقق</h3>
@@ -442,11 +452,6 @@ function Scanner() {
                             <h3>يرجى الرجوع للإجراءات الأمنية</h3>
                             <p>لم يتم العثور على تطابق في قاعدة البيانات العالمية</p>
                         </div>
-
-                        <button onClick={handleReset} className="scan-again-btn">
-                            <RefreshIcon />
-                            إعادة المسح
-                        </button>
                     </div>
                 )}
             </div>
