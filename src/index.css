@@ -1080,6 +1080,15 @@ body {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--moi-gold);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-section-header h3 svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .form-section-body {
@@ -1134,6 +1143,11 @@ body {
 
   .form-section-header h3 {
     font-size: 1rem;
+  }
+
+  .form-section-header h3 svg {
+    width: 20px;
+    height: 20px;
   }
 
   .form-section-body {
