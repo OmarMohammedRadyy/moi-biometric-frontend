@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
+import { getImageUrl } from '../config'
 
 // حالات المسح
 const SCAN_STATE = {
@@ -399,7 +400,7 @@ function Scanner() {
                             </div>
                             <div className="photo-box">
                                 <img
-                                    src={`${import.meta.env.VITE_API_URL || ''}/uploads/${result.visitor.photo_path}`}
+                                    src={getImageUrl(result.visitor.photo_path)}
                                     alt="الصورة المسجلة"
                                 />
                             </div>
