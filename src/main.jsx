@@ -8,7 +8,7 @@ import { API_URL } from './config'
 
 // Configure axios
 axios.defaults.baseURL = API_URL
-axios.defaults.withCredentials = false  // Important for CORS with "*"
+axios.defaults.withCredentials = true  // Send credentials for CORS
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
