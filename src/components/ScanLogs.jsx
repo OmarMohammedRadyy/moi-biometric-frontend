@@ -66,26 +66,62 @@ const ChevronRightIcon = () => (
     </svg>
 )
 
+const DownloadIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+)
+
+const FilterIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+)
+
 function ScanLogs() {
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
     const [page, setPage] = useState(1)
     const [total, setTotal] = useState(0)
+    const [officers, setOfficers] = useState([])
+    const [selectedOfficer, setSelectedOfficer] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+    const [showFilters, setShowFilters] = useState(false)
     const perPage = 20
 
     useEffect(() => {
+        fetchOfficers()
+    }, [])
+
+    useEffect(() => {
         fetchLogs()
-    }, [page])
+    }, [page, selectedOfficer, dateFrom, dateTo])
 
     const getAuthHeader = () => {
         const token = localStorage.getItem('auth_token')
         return { Authorization: `Bearer ${token}` }
     }
 
+    const fetchOfficers = async () => {
+        try {
+            const response = await axios.get('/api/officers', { headers: getAuthHeader() })
+            setOfficers(response.data || [])
+        } catch (err) {
+            console.error('Fetch officers error:', err)
+        }
+    }
+
     const fetchLogs = async () => {
         setLoading(true)
         try {
-            const url = `/api/logs/scans?page=${page}&per_page=${perPage}&match_only=true`
+            let url = `/api/logs/scans?page=${page}&per_page=${perPage}&match_only=true`
+            if (selectedOfficer) url += `&officer_id=${selectedOfficer}`
+            if (dateFrom) url += `&date_from=${dateFrom}T00:00:00`
+            if (dateTo) url += `&date_to=${dateTo}T23:59:59`
+            
             const response = await axios.get(url, { headers: getAuthHeader() })
             setLogs(response.data?.logs || [])
             setTotal(response.data?.total || 0)
@@ -94,6 +130,23 @@ function ScanLogs() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const exportToCSV = () => {
+        let url = `/api/export/scan-logs?match_only=true`
+        if (selectedOfficer) url += `&officer_id=${selectedOfficer}`
+        if (dateFrom) url += `&date_from=${dateFrom}T00:00:00`
+        if (dateTo) url += `&date_to=${dateTo}T23:59:59`
+        
+        const token = localStorage.getItem('auth_token')
+        window.open(`${axios.defaults.baseURL}${url}&token=${token}`, '_blank')
+    }
+
+    const clearFilters = () => {
+        setSelectedOfficer('')
+        setDateFrom('')
+        setDateTo('')
+        setPage(1)
     }
 
     const formatDate = (dateString) => {
@@ -121,12 +174,64 @@ function ScanLogs() {
             <div className="logs-header">
                 <h2><ShieldCheckIcon /> نتائج المسح الأمني</h2>
                 <div className="logs-controls">
+                    <button onClick={() => setShowFilters(!showFilters)} className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}>
+                        <FilterIcon />
+                        فلترة
+                    </button>
+                    <button onClick={exportToCSV} className="export-btn">
+                        <DownloadIcon />
+                        تصدير
+                    </button>
                     <button onClick={fetchLogs} className="refresh-btn">
                         <RefreshIcon />
                         تحديث
                     </button>
                 </div>
             </div>
+
+            {/* Filters Panel */}
+            {showFilters && (
+                <div className="filters-panel">
+                    <div className="filters-row">
+                        <div className="filter-group">
+                            <label>العسكري</label>
+                            <select
+                                value={selectedOfficer}
+                                onChange={(e) => { setSelectedOfficer(e.target.value); setPage(1); }}
+                                className="filter-select"
+                            >
+                                <option value="">جميع العساكر</option>
+                                {officers.map(officer => (
+                                    <option key={officer.id} value={officer.id}>
+                                        {officer.full_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <label>من تاريخ</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                                className="filter-input"
+                            />
+                        </div>
+                        <div className="filter-group">
+                            <label>إلى تاريخ</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                                className="filter-input"
+                            />
+                        </div>
+                        <button onClick={clearFilters} className="clear-filters-btn">
+                            مسح الفلاتر
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Stats */}
             <div className="logs-stats">

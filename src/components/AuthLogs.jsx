@@ -68,17 +68,34 @@ const ChevronRightIcon = () => (
     </svg>
 )
 
+const DownloadIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+)
+
+const FilterIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+)
+
 function AuthLogs() {
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
     const [page, setPage] = useState(1)
     const [total, setTotal] = useState(0)
     const [filter, setFilter] = useState('all')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+    const [showFilters, setShowFilters] = useState(false)
     const perPage = 30
 
     useEffect(() => {
         fetchLogs()
-    }, [page, filter])
+    }, [page, filter, dateFrom, dateTo])
 
     const getAuthHeader = () => {
         const token = localStorage.getItem('auth_token')
@@ -92,6 +109,12 @@ function AuthLogs() {
             if (filter !== 'all') {
                 url += `&action=${filter}`
             }
+            if (dateFrom) {
+                url += `&date_from=${dateFrom}T00:00:00`
+            }
+            if (dateTo) {
+                url += `&date_to=${dateTo}T23:59:59`
+            }
             const response = await axios.get(url, { headers: getAuthHeader() })
             setLogs(response.data?.logs || [])
             setTotal(response.data?.total || 0)
@@ -100,6 +123,23 @@ function AuthLogs() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const exportToCSV = () => {
+        let url = `/api/export/auth-logs?`
+        if (filter !== 'all') url += `&action=${filter}`
+        if (dateFrom) url += `&date_from=${dateFrom}T00:00:00`
+        if (dateTo) url += `&date_to=${dateTo}T23:59:59`
+        
+        const token = localStorage.getItem('auth_token')
+        window.open(`${axios.defaults.baseURL}${url}&token=${token}`, '_blank')
+    }
+
+    const clearFilters = () => {
+        setFilter('all')
+        setDateFrom('')
+        setDateTo('')
+        setPage(1)
     }
 
     const formatDate = (dateString) => {
@@ -136,20 +176,60 @@ function AuthLogs() {
             <div className="logs-header">
                 <h2><LogIcon /> سجل المراقبة</h2>
                 <div className="logs-controls">
-                    <select
-                        value={filter}
-                        onChange={(e) => { setFilter(e.target.value); setPage(1); }}
-                        className="filter-select"
-                    >
-                        <option value="all">الكل</option>
-                        <option value="login">دخول</option>
-                        <option value="logout">خروج</option>
-                    </select>
+                    <button onClick={() => setShowFilters(!showFilters)} className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}>
+                        <FilterIcon />
+                        فلترة
+                    </button>
+                    <button onClick={exportToCSV} className="export-btn">
+                        <DownloadIcon />
+                        تصدير
+                    </button>
                     <button onClick={fetchLogs} className="refresh-btn">
                         <RefreshIcon />
                     </button>
                 </div>
             </div>
+
+            {/* Filters Panel */}
+            {showFilters && (
+                <div className="filters-panel">
+                    <div className="filters-row">
+                        <div className="filter-group">
+                            <label>نوع الإجراء</label>
+                            <select
+                                value={filter}
+                                onChange={(e) => { setFilter(e.target.value); setPage(1); }}
+                                className="filter-select"
+                            >
+                                <option value="all">الكل</option>
+                                <option value="login">دخول</option>
+                                <option value="logout">خروج</option>
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <label>من تاريخ</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                                className="filter-input"
+                            />
+                        </div>
+                        <div className="filter-group">
+                            <label>إلى تاريخ</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                                className="filter-input"
+                            />
+                        </div>
+                        <button onClick={clearFilters} className="clear-filters-btn">
+                            مسح الفلاتر
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Stats */}
             <div className="logs-stats">
