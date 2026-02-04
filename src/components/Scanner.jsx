@@ -2,15 +2,12 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
 import { getImageSrc } from '../config'
 
-// حالات المسح
+// حالات المسح - مبسطة
 const SCAN_STATE = {
     IDLE: 'idle',
     SCANNING: 'scanning',
     MATCH: 'match',
-    MATCH_MEDIUM: 'match_medium',
-    NO_MATCH: 'no_match',
-    SPOOFING: 'spoofing',
-    RATE_LIMITED: 'rate_limited'
+    NO_MATCH: 'no_match'
 }
 
 // أصوات التنبيه
@@ -85,20 +82,6 @@ const RefreshIcon = () => (
     </svg>
 )
 
-const AlertTriangleIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-)
-
-const ClockIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-    </svg>
-)
 
 // أيقونة تبديل الكاميرا
 const CameraSwitchIcon = () => (
@@ -280,36 +263,18 @@ function Scanner() {
             const data = response.data
             setResult(data)
 
-            // Handle different scenarios
-            if (data.is_spoofing_detected) {
-                setScanState(SCAN_STATE.SPOOFING)
-                playSound('error')
-            } else if (data.match_found) {
-                if (data.confidence_level === 'high') {
-                    setScanState(SCAN_STATE.MATCH)
-                    playSound('success')
-                } else {
-                    setScanState(SCAN_STATE.MATCH_MEDIUM)
-                    playSound('success')
-                }
+            // بسيط: إما تطابق أو لا تطابق
+            if (data.match_found) {
+                setScanState(SCAN_STATE.MATCH)
+                playSound('success')
             } else {
                 setScanState(SCAN_STATE.NO_MATCH)
                 playSound('error')
             }
         } catch (err) {
             console.error('Verification error:', err)
-            
-            // Check for rate limiting
-            if (err.response?.status === 429) {
-                setScanState(SCAN_STATE.RATE_LIMITED)
-                setResult({ 
-                    match_found: false, 
-                    message: err.response?.data?.detail || 'تم تجاوز الحد الأقصى للمحاولات'
-                })
-            } else {
-                setScanState(SCAN_STATE.NO_MATCH)
-                setResult({ match_found: false, message: err.response?.data?.detail || 'فشل الاتصال بالخادم' })
-            }
+            setScanState(SCAN_STATE.NO_MATCH)
+            setResult({ match_found: false, message: err.response?.data?.detail || 'فشل الاتصال بالخادم' })
             playSound('error')
         }
     }
@@ -324,10 +289,7 @@ function Scanner() {
         switch (scanState) {
             case SCAN_STATE.SCANNING: return 'scanning'
             case SCAN_STATE.MATCH: return 'match'
-            case SCAN_STATE.MATCH_MEDIUM: return 'match-medium'
             case SCAN_STATE.NO_MATCH: return 'no-match'
-            case SCAN_STATE.SPOOFING: return 'spoofing'
-            case SCAN_STATE.RATE_LIMITED: return 'rate-limited'
             default: return ''
         }
     }
@@ -337,10 +299,7 @@ function Scanner() {
         switch (scanState) {
             case SCAN_STATE.SCANNING: return 'cyan'
             case SCAN_STATE.MATCH: return 'green'
-            case SCAN_STATE.MATCH_MEDIUM: return 'yellow'
             case SCAN_STATE.NO_MATCH: return 'red'
-            case SCAN_STATE.SPOOFING: return 'red'
-            case SCAN_STATE.RATE_LIMITED: return 'orange'
             default: return 'cyan'
         }
     }
@@ -419,7 +378,7 @@ function Scanner() {
                     </div>
                 )}
 
-                {/* نتيجة التطابق العالي */}
+                {/* نتيجة التطابق */}
                 {scanState === SCAN_STATE.MATCH && result && (
                     <div className="result-match">
                         <button onClick={handleReset} className="scan-again-btn" style={{ marginBottom: '1rem', width: 'auto', padding: '0.5rem 1.5rem', fontSize: '0.9rem', margin: '0 auto 1rem auto' }}>
@@ -432,9 +391,8 @@ function Scanner() {
                             <h3>تم التحقق - صلاحية الدخول</h3>
                         </div>
 
-                        <div className="confidence-badge high">
-                            <span>تطابق مؤكد</span>
-                            <strong>{result.confidence?.toFixed(1)}%</strong>
+                        <div className="match-status-badge">
+                            <span>حالة التطابق</span>
                         </div>
 
                         <div className="photo-compare">
@@ -476,114 +434,6 @@ function Scanner() {
                                     <span className="check"><CheckIcon /></span>
                                 </span>
                             </div>
-                        </div>
-
-                        {result.processing_time_ms && (
-                            <div className="processing-time">
-                                <ClockIcon /> {result.processing_time_ms}ms
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* نتيجة التطابق المتوسط */}
-                {scanState === SCAN_STATE.MATCH_MEDIUM && result && (
-                    <div className="result-match medium">
-                        <button onClick={handleReset} className="scan-again-btn" style={{ marginBottom: '1rem', width: 'auto', padding: '0.5rem 1.5rem', fontSize: '0.9rem', margin: '0 auto 1rem auto' }}>
-                            <RefreshIcon />
-                            مسح جديد
-                        </button>
-
-                        <div className="result-header warning">
-                            <AlertTriangleIcon />
-                            <h3>تطابق محتمل - يُنصح بالتحقق اليدوي</h3>
-                        </div>
-
-                        <div className="confidence-badge medium">
-                            <span>تطابق محتمل</span>
-                            <strong>{result.confidence?.toFixed(1)}%</strong>
-                        </div>
-
-                        <div className="photo-compare">
-                            <div className="photo-box">
-                                {result.captured_photo && (
-                                    <img
-                                        src={`data:image/jpeg;base64,${result.captured_photo}`}
-                                        alt="الصورة الملتقطة"
-                                    />
-                                )}
-                            </div>
-                            <div className="photo-box">
-                                <img
-                                    src={getImageSrc(result.visitor)}
-                                    alt="الصورة المسجلة"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="info-rows">
-                            <div className="info-row">
-                                <span className="info-label">الاسم المحتمل:</span>
-                                <span className="info-value warning">
-                                    {result.visitor.full_name}
-                                    <AlertTriangleIcon />
-                                </span>
-                            </div>
-                            <div className="info-row">
-                                <span className="info-label">رقم الجواز:</span>
-                                <span className="info-value">
-                                    {result.visitor.passport_number}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="manual-verify-notice">
-                            ⚠️ يرجى التحقق من الهوية يدوياً
-                        </div>
-                    </div>
-                )}
-
-                {/* تحذير Spoofing */}
-                {scanState === SCAN_STATE.SPOOFING && (
-                    <div className="result-spoofing">
-                        <button onClick={handleReset} className="scan-again-btn">
-                            <RefreshIcon />
-                            إعادة المحاولة
-                        </button>
-
-                        <div className="result-header danger">
-                            <AlertTriangleIcon />
-                            <h3>تحذير أمني!</h3>
-                        </div>
-
-                        <div className="spoofing-warning">
-                            <AlertTriangleIcon />
-                            <p>تم اكتشاف محاولة احتيال محتملة</p>
-                            <span>قد تكون الصورة من شاشة أو صورة مطبوعة</span>
-                        </div>
-
-                        <div className="security-notice">
-                            يرجى استخدام وجه حقيقي أمام الكاميرا
-                        </div>
-                    </div>
-                )}
-
-                {/* Rate Limiting */}
-                {scanState === SCAN_STATE.RATE_LIMITED && (
-                    <div className="result-rate-limited">
-                        <button onClick={handleReset} className="scan-again-btn">
-                            <RefreshIcon />
-                            إعادة المحاولة
-                        </button>
-
-                        <div className="result-header warning">
-                            <ClockIcon />
-                            <h3>تم تجاوز الحد الأقصى</h3>
-                        </div>
-
-                        <div className="rate-limit-notice">
-                            <ClockIcon />
-                            <p>{result?.message || 'يرجى الانتظار قبل المحاولة مرة أخرى'}</p>
                         </div>
                     </div>
                 )}
