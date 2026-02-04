@@ -6,8 +6,9 @@ import './index.css'
 import App from './App.jsx'
 import { API_URL } from './config'
 
-// Configure axios base URL
+// Configure axios
 axios.defaults.baseURL = API_URL
+axios.defaults.withCredentials = false  // Important for CORS with "*"
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
