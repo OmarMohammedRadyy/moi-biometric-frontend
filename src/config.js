@@ -1,4 +1,4 @@
-// API Configuration
+// API Configuration - Build 2026-02-04-v3.1
 // Production backend URL
 const PRODUCTION_API = 'https://moi-biometric-backend-production.up.railway.app'
 
