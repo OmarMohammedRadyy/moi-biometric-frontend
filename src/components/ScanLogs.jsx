@@ -156,7 +156,7 @@ function ScanLogs() {
                                 <div className="scan-card-header">
                                     <div className="scan-match-badge">
                                         <ShieldCheckIcon />
-                                        تطابق {log.confidence?.toFixed(1)}%
+                                        حالة تطابق
                                     </div>
                                     <div className="scan-time">
                                         <ClockIcon />
