@@ -1,10 +1,16 @@
-import { Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
+import { useState, useEffect, createContext } from 'react'
 import axios from 'axios'
 import Scanner from './components/Scanner'
 import AdminPanel from './components/AdminPanel'
-import OfficerPanel from './components/OfficerPanel'
 import Login from './components/Login'
+
+// سياق الصلاحيات
+export const PermissionsContext = createContext({
+  permissions: [],
+  role: null,
+  hasPermission: () => true
+})
 
 // أيقونات التنقل
 const ScannerIcon = () => (
@@ -48,7 +54,6 @@ const LogoutIcon = () => (
 
 function App() {
   const location = useLocation()
-  const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
@@ -79,21 +84,23 @@ function App() {
           role: response.data.role
         })
         
-        // Fetch permissions for officers
-        if (response.data.role === 'officer') {
-          try {
-            const permRes = await axios.get('/api/user/permissions', {
-              headers: { Authorization: `Bearer ${token}` }
-            })
-            setPermissions(permRes.data.permissions || [])
-          } catch (e) {
-            console.error('Failed to fetch permissions:', e)
-            setPermissions(['scanner']) // Default to scanner
+        // Fetch permissions
+        try {
+          const permRes = await axios.get('/api/user/permissions', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          setPermissions(permRes.data.permissions || [])
+        } catch (e) {
+          console.error('Failed to fetch permissions:', e)
+          // Admin gets all, officer gets scanner by default
+          if (response.data.role === 'admin') {
+            setPermissions(['scanner', 'visitors', 'users', 'auth_logs', 'scan_logs', 'notifications', 'dashboard', 'permissions'])
+          } else {
+            setPermissions(['scanner'])
           }
         }
       }
     } catch (err) {
-      // Token invalid, clear it
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
     } finally {
@@ -110,16 +117,18 @@ function App() {
       role: data.role
     })
     
-    // Fetch permissions for officers
-    if (data.role === 'officer') {
-      try {
-        const token = localStorage.getItem('auth_token')
-        const permRes = await axios.get('/api/user/permissions', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        setPermissions(permRes.data.permissions || [])
-      } catch (e) {
-        console.error('Failed to fetch permissions:', e)
+    // Fetch permissions
+    try {
+      const token = localStorage.getItem('auth_token')
+      const permRes = await axios.get('/api/user/permissions', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setPermissions(permRes.data.permissions || [])
+    } catch (e) {
+      console.error('Failed to fetch permissions:', e)
+      if (data.role === 'admin') {
+        setPermissions(['scanner', 'visitors', 'users', 'auth_logs', 'scan_logs', 'notifications', 'dashboard', 'permissions'])
+      } else {
         setPermissions(['scanner'])
       }
     }
@@ -140,6 +149,7 @@ function App() {
     localStorage.removeItem('auth_user')
     setIsAuthenticated(false)
     setUser(null)
+    setPermissions([])
   }
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen)
@@ -147,6 +157,17 @@ function App() {
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin'
+  
+  // Check if user has access to control panel (any permission beyond scanner)
+  const hasControlPanelAccess = isAdmin || permissions.some(p => 
+    ['visitors', 'users', 'auth_logs', 'scan_logs', 'notifications', 'dashboard', 'permissions'].includes(p)
+  )
+
+  // Permission helper
+  const hasPermission = (pageId) => {
+    if (isAdmin) return true
+    return permissions.includes(pageId)
+  }
 
   // Show loading spinner while checking auth
   if (loading) {
@@ -162,14 +183,16 @@ function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />
   }
 
-  // Officer view - with permissions
-  if (!isAdmin) {
-    // Check if officer has access to more than just scanner
-    const hasControlPanelAccess = permissions.some(p => 
-      ['visitors', 'users', 'auth_logs', 'scan_logs', 'notifications', 'dashboard', 'permissions'].includes(p)
-    )
-    
-    return (
+  // Context value
+  const permissionsContextValue = {
+    permissions,
+    role: user?.role,
+    hasPermission,
+    isAdmin
+  }
+
+  return (
+    <PermissionsContext.Provider value={permissionsContextValue}>
       <div className="app-container">
         <header className="app-header">
           <div className="header-content">
@@ -179,220 +202,107 @@ function App() {
               </div>
               <div className="header-title">
                 <h1>الإدارة العامة لشئون الإقامة</h1>
-                <span>{user?.full_name}</span>
+                <span>{isAdmin ? 'إدارة الخدمات الالكترونية' : user?.full_name}</span>
               </div>
             </div>
-            
-            {/* Show navigation if officer has permissions */}
-            {hasControlPanelAccess && (
-              <nav className="desktop-nav">
-                {permissions.includes('scanner') && (
-                  <Link
-                    to="/"
-                    className={`nav-btn ${location.pathname === '/' ? 'active' : ''}`}
-                  >
-                    <ScannerIcon />
-                    الماسح
-                  </Link>
-                )}
+
+            {/* Desktop Navigation */}
+            <nav className="desktop-nav">
+              {hasPermission('scanner') && (
                 <Link
-                  to="/officer"
-                  className={`nav-btn ${location.pathname.startsWith('/officer') ? 'active' : ''}`}
+                  to="/"
+                  className={`nav-btn ${location.pathname === '/' ? 'active' : ''}`}
+                >
+                  <ScannerIcon />
+                  الماسح
+                </Link>
+              )}
+              {hasControlPanelAccess && (
+                <Link
+                  to="/admin"
+                  className={`nav-btn ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
                 >
                   <AdminIcon />
                   لوحة التحكم
                 </Link>
-                <button onClick={handleLogout} className="logout-btn">
-                  <LogoutIcon />
-                  خروج
-                </button>
-              </nav>
-            )}
-            
-            {!hasControlPanelAccess && (
+              )}
               <button onClick={handleLogout} className="logout-btn">
                 <LogoutIcon />
                 خروج
               </button>
-            )}
-            
+            </nav>
+
             {/* Mobile Menu Button */}
-            {hasControlPanelAccess && (
-              <button className="header-menu" onClick={toggleMobileMenu}>
-                <MenuIcon />
-              </button>
-            )}
+            <button className="header-menu" onClick={toggleMobileMenu}>
+              <MenuIcon />
+            </button>
           </div>
         </header>
-        
-        {/* Mobile Navigation for Officer */}
-        {hasControlPanelAccess && (
-          <>
-            <div
-              className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}
-              onClick={closeMobileMenu}
-            />
-            <div className={`mobile-nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
-              <div className="mobile-nav-header">
-                <div className="header-brand">
-                  <div className="header-emblem" style={{ width: 70, height: 70, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src="/logo.png" alt="شعار الإدارة" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.6)' }} />
-                  </div>
-                  <div className="header-title">
-                    <h1 style={{ fontSize: '0.85rem' }}>الإدارة العامة لشئون الإقامة</h1>
-                    <span style={{ fontSize: '0.7rem' }}>{user?.full_name} (عسكري)</span>
-                  </div>
-                </div>
-                <button className="mobile-nav-close" onClick={closeMobileMenu}>
-                  <CloseIcon />
-                </button>
+
+        {/* Mobile Navigation Overlay */}
+        <div
+          className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}
+          onClick={closeMobileMenu}
+        />
+
+        {/* Mobile Navigation Drawer */}
+        <div className={`mobile-nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+          <div className="mobile-nav-header">
+            <div className="header-brand">
+              <div className="header-emblem" style={{ width: 70, height: 70, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/logo.png" alt="شعار الإدارة" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.6)' }} />
               </div>
-              <nav className="mobile-nav-links">
-                {permissions.includes('scanner') && (
-                  <Link
-                    to="/"
-                    className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-                    onClick={closeMobileMenu}
-                  >
-                    <ScannerIcon />
-                    الماسح الأمني
-                  </Link>
-                )}
-                <Link
-                  to="/officer"
-                  className={`mobile-nav-link ${location.pathname.startsWith('/officer') ? 'active' : ''}`}
-                  onClick={closeMobileMenu}
-                >
-                  <AdminIcon />
-                  لوحة التحكم
-                </Link>
-                <button
-                  className="mobile-nav-link"
-                  onClick={() => { closeMobileMenu(); handleLogout(); }}
-                  style={{ color: '#ff3d3d', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}
-                >
-                  <LogoutIcon />
-                  تسجيل الخروج
-                </button>
-              </nav>
+              <div className="header-title">
+                <h1 style={{ fontSize: '0.85rem' }}>الإدارة العامة لشئون الإقامة</h1>
+                <span style={{ fontSize: '0.7rem' }}>{user?.full_name} ({isAdmin ? 'مدير' : 'عسكري'})</span>
+              </div>
             </div>
-          </>
-        )}
-        
+            <button className="mobile-nav-close" onClick={closeMobileMenu}>
+              <CloseIcon />
+            </button>
+          </div>
+          <nav className="mobile-nav-links">
+            {hasPermission('scanner') && (
+              <Link
+                to="/"
+                className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <ScannerIcon />
+                الماسح الأمني
+              </Link>
+            )}
+            {hasControlPanelAccess && (
+              <Link
+                to="/admin"
+                className={`mobile-nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <AdminIcon />
+                لوحة التحكم
+              </Link>
+            )}
+            <button
+              className="mobile-nav-link"
+              onClick={() => { closeMobileMenu(); handleLogout(); }}
+              style={{ color: '#ff3d3d', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}
+            >
+              <LogoutIcon />
+              تسجيل الخروج
+            </button>
+          </nav>
+        </div>
+
+        {/* Main Content */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Scanner />} />
-            <Route path="/officer/*" element={<OfficerPanel permissions={permissions} />} />
+            <Route path="/admin/*" element={<AdminPanel />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
-    )
-  }
-
-  // Admin view - Full navigation
-  return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="header-content">
-          <div className="header-brand">
-            <div className="header-emblem">
-              <img src="/logo.png" alt="شعار الإدارة" />
-            </div>
-            <div className="header-title">
-              <h1>الإدارة العامة لشئون الإقامة</h1>
-              <span>إدارة الخدمات الالكترونية</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation - Admin Only */}
-          <nav className="desktop-nav">
-            <Link
-              to="/"
-              className={`nav-btn ${location.pathname === '/' ? 'active' : ''}`}
-            >
-              <ScannerIcon />
-              الماسح
-            </Link>
-            <Link
-              to="/admin"
-              className={`nav-btn ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
-            >
-              <AdminIcon />
-              لوحة التحكم
-            </Link>
-            <button onClick={handleLogout} className="logout-btn">
-              <LogoutIcon />
-              خروج
-            </button>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button className="header-menu" onClick={toggleMobileMenu}>
-            <MenuIcon />
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Navigation Overlay */}
-      <div
-        className={`mobile-nav-overlay ${mobileMenuOpen ? 'open' : ''}`}
-        onClick={closeMobileMenu}
-      />
-
-      {/* Mobile Navigation Drawer */}
-      <div className={`mobile-nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
-        <div className="mobile-nav-header">
-          <div className="header-brand">
-            <div className="header-emblem" style={{ width: 70, height: 70, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/logo.png" alt="شعار الإدارة" style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.6)' }} />
-            </div>
-            <div className="header-title">
-              <h1 style={{ fontSize: '0.85rem' }}>الإدارة العامة لشئون الإقامة</h1>
-              <span style={{ fontSize: '0.7rem' }}>{user?.full_name} ({user?.role === 'admin' ? 'مدير' : 'عسكري'})</span>
-            </div>
-          </div>
-          <button className="mobile-nav-close" onClick={closeMobileMenu}>
-            <CloseIcon />
-          </button>
-        </div>
-        <nav className="mobile-nav-links">
-          <Link
-            to="/"
-            className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            <ScannerIcon />
-            الماسح الأمني
-          </Link>
-          <Link
-            to="/admin"
-            className={`mobile-nav-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
-            onClick={closeMobileMenu}
-          >
-            <AdminIcon />
-            لوحة التحكم
-          </Link>
-          <button
-            className="mobile-nav-link"
-            onClick={() => { closeMobileMenu(); handleLogout(); }}
-            style={{ color: '#ff3d3d', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '1rem', paddingTop: '1rem' }}
-          >
-            <LogoutIcon />
-            تسجيل الخروج
-          </button>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Scanner />} />
-          <Route path="/admin/*" element={<AdminPanel />} />
-          <Route path="/login" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+    </PermissionsContext.Provider>
   )
 }
 

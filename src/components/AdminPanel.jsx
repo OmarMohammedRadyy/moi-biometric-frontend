@@ -1,13 +1,49 @@
-import { useState, useEffect, useRef } from 'react'
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef, useContext } from 'react'
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getImageSrc } from '../config'
+import { PermissionsContext } from '../App'
 import Dashboard from './Dashboard'
 import UsersManagement from './UsersManagement'
 import AuthLogs from './AuthLogs'
 import ScanLogs from './ScanLogs'
 import Notifications from './Notifications'
 import PermissionsManagement from './PermissionsManagement'
+
+// مكون رسالة عدم الصلاحية
+const AccessDenied = () => {
+    const navigate = useNavigate()
+    
+    return (
+        <div className="access-denied-container">
+            <div className="access-denied-content">
+                <div className="access-denied-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        <line x1="10" y1="10" x2="14" y2="14" />
+                        <line x1="14" y1="10" x2="10" y2="14" />
+                    </svg>
+                </div>
+                <h2>غير مصرح بالدخول</h2>
+                <p>ليس لديك صلاحية للوصول لهذه الصفحة بناءً على الصلاحيات المحددة من قبل المدير</p>
+                <button onClick={() => navigate(-1)} className="back-btn">
+                    العودة
+                </button>
+            </div>
+        </div>
+    )
+}
+
+// مكون حماية الصفحة
+const ProtectedPage = ({ pageId, children }) => {
+    const { hasPermission } = useContext(PermissionsContext)
+    
+    if (!hasPermission(pageId)) {
+        return <AccessDenied />
+    }
+    
+    return children
+}
 
 // أيقونات SVG
 const UsersIcon = () => (
@@ -429,16 +465,21 @@ function VisitorsManagement() {
 function AdminPanel() {
     const location = useLocation()
     const currentPath = location.pathname
+    const { hasPermission, isAdmin } = useContext(PermissionsContext)
 
-    const tabs = [
-        { path: '/admin', label: 'الرئيسية', icon: <DashboardIcon /> },
-        { path: '/admin/visitors', label: 'الزوار', icon: <VisitorsIcon /> },
-        { path: '/admin/users', label: 'المستخدمين', icon: <UsersIcon /> },
-        { path: '/admin/permissions', label: 'الصلاحيات', icon: <ShieldLockIcon /> },
-        { path: '/admin/auth-logs', label: 'المراقبة', icon: <LogIcon /> },
-        { path: '/admin/scan-logs', label: 'المسح', icon: <ScanLogIcon /> },
-        { path: '/admin/notifications', label: 'الإشعارات', icon: <BellIcon /> },
+    // جميع التبويبات مع معرّف الصلاحية
+    const allTabs = [
+        { path: '/admin', label: 'الرئيسية', icon: <DashboardIcon />, permId: 'dashboard' },
+        { path: '/admin/visitors', label: 'الزوار', icon: <VisitorsIcon />, permId: 'visitors' },
+        { path: '/admin/users', label: 'المستخدمين', icon: <UsersIcon />, permId: 'users' },
+        { path: '/admin/permissions', label: 'الصلاحيات', icon: <ShieldLockIcon />, permId: 'permissions' },
+        { path: '/admin/auth-logs', label: 'المراقبة', icon: <LogIcon />, permId: 'auth_logs' },
+        { path: '/admin/scan-logs', label: 'المسح', icon: <ScanLogIcon />, permId: 'scan_logs' },
+        { path: '/admin/notifications', label: 'الإشعارات', icon: <BellIcon />, permId: 'notifications' },
     ]
+    
+    // فلترة التبويبات حسب الصلاحيات
+    const tabs = allTabs.filter(tab => hasPermission(tab.permId))
 
     const isActive = (path) => {
         if (path === '/admin') {
@@ -490,13 +531,41 @@ function AdminPanel() {
             <main className="admin-main">
                 <div className="admin-content">
                     <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/visitors" element={<VisitorsManagement />} />
-                        <Route path="/users" element={<UsersManagement />} />
-                        <Route path="/permissions" element={<PermissionsManagement />} />
-                        <Route path="/auth-logs" element={<AuthLogs />} />
-                        <Route path="/scan-logs" element={<ScanLogs />} />
-                        <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/" element={
+                            <ProtectedPage pageId="dashboard">
+                                <Dashboard />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/visitors" element={
+                            <ProtectedPage pageId="visitors">
+                                <VisitorsManagement />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/users" element={
+                            <ProtectedPage pageId="users">
+                                <UsersManagement />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/permissions" element={
+                            <ProtectedPage pageId="permissions">
+                                <PermissionsManagement />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/auth-logs" element={
+                            <ProtectedPage pageId="auth_logs">
+                                <AuthLogs />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/scan-logs" element={
+                            <ProtectedPage pageId="scan_logs">
+                                <ScanLogs />
+                            </ProtectedPage>
+                        } />
+                        <Route path="/notifications" element={
+                            <ProtectedPage pageId="notifications">
+                                <Notifications />
+                            </ProtectedPage>
+                        } />
                     </Routes>
                 </div>
             </main>
