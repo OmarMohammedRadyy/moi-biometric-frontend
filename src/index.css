@@ -306,17 +306,10 @@ body {
   min-height: 50vh;
 }
 
-.camera-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: absolute;
-  inset: 0;
-}
-
 /* Video Wrapper for Zoom */
 .video-wrapper {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -325,7 +318,10 @@ body {
   justify-content: center;
 }
 
-.video-wrapper .camera-video {
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   transition: transform 0.2s ease;
 }
 
