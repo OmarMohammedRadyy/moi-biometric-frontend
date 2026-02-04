@@ -40,6 +40,19 @@ const TrashIcon = () => (
     </svg>
 )
 
+const EditIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+)
+
+const CloseIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+)
 
 const AlertIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -63,12 +76,21 @@ function UsersManagement() {
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(null)
     const [showForm, setShowForm] = useState(false)
+    const [editingUser, setEditingUser] = useState(null)
+    const [showEditModal, setShowEditModal] = useState(false)
 
     const [formData, setFormData] = useState({
         username: '',
         password: '',
         full_name: '',
         role: 'officer'
+    })
+
+    const [editFormData, setEditFormData] = useState({
+        username: '',
+        full_name: '',
+        password: '',
+        role: ''
     })
 
     useEffect(() => {
@@ -150,6 +172,47 @@ function UsersManagement() {
             setSuccess(`تم حذف حساب "${fullName}"`)
         } catch (err) {
             setError(err.response?.data?.detail || 'فشل في حذف المستخدم')
+        }
+    }
+
+    const openEditModal = (user) => {
+        setEditingUser(user)
+        setEditFormData({
+            username: user.username,
+            full_name: user.full_name,
+            password: '',
+            role: user.role
+        })
+        setShowEditModal(true)
+    }
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target
+        setEditFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault()
+        setSubmitting(true)
+        setError(null)
+
+        try {
+            // Only send changed fields
+            const updateData = {}
+            if (editFormData.username !== editingUser.username) updateData.username = editFormData.username
+            if (editFormData.full_name !== editingUser.full_name) updateData.full_name = editFormData.full_name
+            if (editFormData.password) updateData.password = editFormData.password
+            if (editFormData.role !== editingUser.role) updateData.role = editFormData.role
+
+            const response = await axios.put(`/api/users/${editingUser.id}`, updateData, { headers: getAuthHeader() })
+            setUsers(prev => prev.map(u => u.id === editingUser.id ? response.data : u))
+            setSuccess(`تم تحديث بيانات "${response.data.full_name}" بنجاح`)
+            setShowEditModal(false)
+            setEditingUser(null)
+        } catch (err) {
+            setError(err.response?.data?.detail || 'فشل في تحديث بيانات المستخدم')
+        } finally {
+            setSubmitting(false)
         }
     }
 
@@ -291,6 +354,13 @@ function UsersManagement() {
                                     </div>
                                     <div className="user-actions">
                                         <button
+                                            onClick={() => openEditModal(user)}
+                                            className="edit-btn"
+                                            title="تعديل البيانات"
+                                        >
+                                            <EditIcon />
+                                        </button>
+                                        <button
                                             onClick={() => handleToggle(user.id)}
                                             className={`toggle-btn ${user.is_active ? 'on' : 'off'}`}
                                             title={user.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
@@ -330,9 +400,89 @@ function UsersManagement() {
                                         <div className="user-username">@{user.username}</div>
                                         <span className="user-role admin">مدير النظام</span>
                                     </div>
+                                    <div className="user-actions">
+                                        <button
+                                            onClick={() => openEditModal(user)}
+                                            className="edit-btn"
+                                            title="تعديل البيانات"
+                                        >
+                                            <EditIcon />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* موديل تعديل المستخدم */}
+            {showEditModal && editingUser && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>تعديل بيانات {editingUser.full_name}</h3>
+                            <button className="close-btn" onClick={() => setShowEditModal(false)}>
+                                <CloseIcon />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>اسم المستخدم</label>
+                                    <input
+                                        type="text"
+                                        name="username"
+                                        value={editFormData.username}
+                                        onChange={handleEditChange}
+                                        className="form-input"
+                                        dir="ltr"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>الاسم الكامل</label>
+                                    <input
+                                        type="text"
+                                        name="full_name"
+                                        value={editFormData.full_name}
+                                        onChange={handleEditChange}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>كلمة المرور الجديدة (اتركها فارغة للإبقاء على القديمة)</label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={editFormData.password}
+                                        onChange={handleEditChange}
+                                        className="form-input"
+                                        placeholder="كلمة المرور الجديدة"
+                                        dir="ltr"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>الصلاحية</label>
+                                    <select
+                                        name="role"
+                                        value={editFormData.role}
+                                        onChange={handleEditChange}
+                                        className="form-input"
+                                    >
+                                        <option value="officer">عسكري (ماسح فقط)</option>
+                                        <option value="admin">مدير (صلاحيات كاملة)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="cancel-btn" onClick={() => setShowEditModal(false)}>
+                                    إلغاء
+                                </button>
+                                <button type="submit" disabled={submitting} className="submit-btn">
+                                    {submitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
