@@ -91,6 +91,33 @@ const CameraSwitchIcon = () => (
     </svg>
 )
 
+// أيقونات الزوم
+const ZoomInIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <line x1="11" y1="8" x2="11" y2="14" />
+        <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+)
+
+const ZoomOutIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+)
+
+const ZoomResetIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <path d="M11 8v6M8 11h6" strokeOpacity="0" />
+        <text x="8" y="14" fontSize="8" fill="currentColor" stroke="none">1x</text>
+    </svg>
+)
+
 // مكون Face Mesh المتحرك
 const FaceMesh = ({ color }) => (
     <div className={`face-mesh ${color}`}>
@@ -164,6 +191,9 @@ function Scanner() {
     const [result, setResult] = useState(null)
     const [cameraReady, setCameraReady] = useState(false)
     const [facingMode, setFacingMode] = useState('environment') // 'user' = أمامية, 'environment' = خلفية
+    const [zoomLevel, setZoomLevel] = useState(1)
+    const [maxZoom, setMaxZoom] = useState(1)
+    const [supportsZoom, setSupportsZoom] = useState(false)
 
     // تهيئة الكاميرا
     const initCamera = useCallback(async (facing) => {
@@ -173,6 +203,8 @@ function Scanner() {
         }
 
         setCameraReady(false)
+        setZoomLevel(1)
+        setSupportsZoom(false)
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -187,6 +219,20 @@ function Scanner() {
                 videoRef.current.srcObject = stream
                 streamRef.current = stream
                 setCameraReady(true)
+                
+                // التحقق من دعم الزوم
+                const track = stream.getVideoTracks()[0]
+                const capabilities = track.getCapabilities ? track.getCapabilities() : {}
+                
+                if (capabilities.zoom) {
+                    setSupportsZoom(true)
+                    setMaxZoom(capabilities.zoom.max || 5)
+                    console.log('📷 Zoom supported: 1x -', capabilities.zoom.max + 'x')
+                } else {
+                    console.log('📷 Hardware zoom not supported, using digital zoom')
+                    setSupportsZoom(false)
+                    setMaxZoom(4) // Digital zoom max
+                }
             }
         } catch (err) {
             console.error('Camera error:', err)
@@ -205,6 +251,18 @@ function Scanner() {
                         streamRef.current = stream
                         setCameraReady(true)
                         setFacingMode('user')
+                        
+                        // التحقق من دعم الزوم
+                        const track = stream.getVideoTracks()[0]
+                        const capabilities = track.getCapabilities ? track.getCapabilities() : {}
+                        
+                        if (capabilities.zoom) {
+                            setSupportsZoom(true)
+                            setMaxZoom(capabilities.zoom.max || 5)
+                        } else {
+                            setSupportsZoom(false)
+                            setMaxZoom(4)
+                        }
                     }
                 } catch (e) {
                     console.error('Fallback camera error:', e)
@@ -229,6 +287,28 @@ function Scanner() {
         initCamera(newFacing)
     }
 
+    // التحكم بالزوم
+    const handleZoom = async (newZoom) => {
+        const clampedZoom = Math.min(Math.max(newZoom, 1), maxZoom)
+        setZoomLevel(clampedZoom)
+        
+        // محاولة استخدام الزوم الأصلي للكاميرا
+        if (streamRef.current && supportsZoom) {
+            const track = streamRef.current.getVideoTracks()[0]
+            try {
+                await track.applyConstraints({
+                    advanced: [{ zoom: clampedZoom }]
+                })
+            } catch (e) {
+                console.log('Hardware zoom failed, using digital zoom')
+            }
+        }
+    }
+
+    const zoomIn = () => handleZoom(zoomLevel + 0.5)
+    const zoomOut = () => handleZoom(zoomLevel - 0.5)
+    const resetZoom = () => handleZoom(1)
+
     // التقاط صورة وإرسالها للتحقق
     const handleScan = async () => {
         if (!videoRef.current || !canvasRef.current) return
@@ -242,9 +322,26 @@ function Scanner() {
             const canvas = canvasRef.current
             const ctx = canvas.getContext('2d')
 
-            canvas.width = video.videoWidth
-            canvas.height = video.videoHeight
-            ctx.drawImage(video, 0, 0)
+            // حساب منطقة الالتقاط مع الزوم الرقمي
+            const vw = video.videoWidth
+            const vh = video.videoHeight
+            
+            if (!supportsZoom && zoomLevel > 1) {
+                // زوم رقمي - نلتقط المنطقة المكبرة فقط
+                const cropWidth = vw / zoomLevel
+                const cropHeight = vh / zoomLevel
+                const cropX = (vw - cropWidth) / 2
+                const cropY = (vh - cropHeight) / 2
+                
+                canvas.width = cropWidth
+                canvas.height = cropHeight
+                ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+            } else {
+                // زوم أصلي أو بدون زوم
+                canvas.width = vw
+                canvas.height = vh
+                ctx.drawImage(video, 0, 0)
+            }
 
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9))
 
@@ -304,26 +401,88 @@ function Scanner() {
         }
     }
 
+    // حساب التحويل للزوم الرقمي
+    const getVideoStyle = () => {
+        if (supportsZoom || zoomLevel === 1) {
+            return {}
+        }
+        // زوم رقمي باستخدام CSS transform
+        return {
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'center center'
+        }
+    }
+
     return (
         <div className="scanner-page">
             {/* منطقة الكاميرا */}
             <div className="camera-container">
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="camera-video"
-                />
+                <div className="video-wrapper">
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="camera-video"
+                        style={getVideoStyle()}
+                    />
+                </div>
 
-                {/* زر تبديل الكاميرا */}
-                <button
-                    className="camera-switch-btn"
-                    onClick={switchCamera}
-                    title={facingMode === 'user' ? 'تبديل للكاميرا الخلفية' : 'تبديل للكاميرا الأمامية'}
-                >
-                    <CameraSwitchIcon />
-                </button>
+                {/* أزرار التحكم بالكاميرا */}
+                <div className="camera-controls">
+                    {/* زر تبديل الكاميرا */}
+                    <button
+                        className="camera-control-btn"
+                        onClick={switchCamera}
+                        title={facingMode === 'user' ? 'تبديل للكاميرا الخلفية' : 'تبديل للكاميرا الأمامية'}
+                    >
+                        <CameraSwitchIcon />
+                    </button>
+                </div>
+
+                {/* شريط التحكم بالزوم */}
+                <div className="zoom-controls">
+                    <button
+                        className="zoom-btn"
+                        onClick={zoomOut}
+                        disabled={zoomLevel <= 1}
+                        title="تصغير"
+                    >
+                        <ZoomOutIcon />
+                    </button>
+                    
+                    <div className="zoom-slider-container">
+                        <input
+                            type="range"
+                            min="1"
+                            max={maxZoom}
+                            step="0.1"
+                            value={zoomLevel}
+                            onChange={(e) => handleZoom(parseFloat(e.target.value))}
+                            className="zoom-slider"
+                        />
+                        <span className="zoom-level">{zoomLevel.toFixed(1)}x</span>
+                    </div>
+                    
+                    <button
+                        className="zoom-btn"
+                        onClick={zoomIn}
+                        disabled={zoomLevel >= maxZoom}
+                        title="تكبير"
+                    >
+                        <ZoomInIcon />
+                    </button>
+                    
+                    {zoomLevel > 1 && (
+                        <button
+                            className="zoom-btn reset"
+                            onClick={resetZoom}
+                            title="إعادة تعيين"
+                        >
+                            1x
+                        </button>
+                    )}
+                </div>
 
                 {/* إطار الوجه */}
                 <div className={`face-frame ${getFrameClass()}`}>

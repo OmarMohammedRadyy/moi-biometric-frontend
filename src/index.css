@@ -314,7 +314,173 @@ body {
   inset: 0;
 }
 
-/* Camera Switch Button */
+/* Video Wrapper for Zoom */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-wrapper .camera-video {
+  transition: transform 0.2s ease;
+}
+
+/* Camera Controls Container */
+.camera-controls {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camera-control-btn {
+  width: 44px;
+  height: 44px;
+  background: rgba(10, 22, 40, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.camera-control-btn:hover {
+  background: var(--moi-gold);
+  color: var(--moi-navy-dark);
+  border-color: var(--moi-gold);
+}
+
+.camera-control-btn:active {
+  transform: scale(0.95);
+}
+
+.camera-control-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(10, 22, 40, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: 25px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: var(--moi-gold);
+  color: var(--moi-navy-dark);
+  border-color: var(--moi-gold);
+}
+
+.zoom-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.zoom-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.zoom-btn.reset {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: var(--moi-gold);
+  color: var(--moi-gold);
+}
+
+.zoom-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zoom-slider {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--moi-gold);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--moi-gold);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.zoom-level {
+  min-width: 35px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--moi-gold);
+}
+
+/* Camera Switch Button - backwards compatibility */
 .camera-switch-btn {
   position: absolute;
   top: 1rem;
@@ -348,6 +514,33 @@ body {
 .camera-switch-btn svg {
   width: 22px;
   height: 22px;
+}
+
+/* Responsive Zoom Controls */
+@media (max-width: 480px) {
+  .zoom-controls {
+    padding: 0.4rem 0.5rem;
+    gap: 0.3rem;
+  }
+  
+  .zoom-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .zoom-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .zoom-slider {
+    width: 70px;
+  }
+  
+  .zoom-level {
+    font-size: 0.7rem;
+    min-width: 30px;
+  }
 }
 
 /* ==================== Face Frame Overlay ==================== */
