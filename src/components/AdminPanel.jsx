@@ -7,6 +7,7 @@ import UsersManagement from './UsersManagement'
 import AuthLogs from './AuthLogs'
 import ScanLogs from './ScanLogs'
 import Notifications from './Notifications'
+import PermissionsManagement from './PermissionsManagement'
 
 // أيقونات SVG
 const UsersIcon = () => (
@@ -53,6 +54,14 @@ const BellIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+)
+
+const ShieldLockIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <rect x="9" y="9" width="6" height="5" rx="1" />
+        <path d="M10 9V7a2 2 0 0 1 4 0v2" />
     </svg>
 )
 
@@ -425,6 +434,7 @@ function AdminPanel() {
         { path: '/admin', label: 'الرئيسية', icon: <DashboardIcon /> },
         { path: '/admin/visitors', label: 'الزوار', icon: <VisitorsIcon /> },
         { path: '/admin/users', label: 'المستخدمين', icon: <UsersIcon /> },
+        { path: '/admin/permissions', label: 'الصلاحيات', icon: <ShieldLockIcon /> },
         { path: '/admin/auth-logs', label: 'المراقبة', icon: <LogIcon /> },
         { path: '/admin/scan-logs', label: 'المسح', icon: <ScanLogIcon /> },
         { path: '/admin/notifications', label: 'الإشعارات', icon: <BellIcon /> },
@@ -483,6 +493,7 @@ function AdminPanel() {
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/visitors" element={<VisitorsManagement />} />
                         <Route path="/users" element={<UsersManagement />} />
+                        <Route path="/permissions" element={<PermissionsManagement />} />
                         <Route path="/auth-logs" element={<AuthLogs />} />
                         <Route path="/scan-logs" element={<ScanLogs />} />
                         <Route path="/notifications" element={<Notifications />} />
